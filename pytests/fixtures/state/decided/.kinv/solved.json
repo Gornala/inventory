@@ -1,0 +1,14 @@
+{
+  "solved": [
+    {
+      "id": "multi-package:resistor:0ohm",
+      "signature": "stale × 1",
+      "at": "2026-09-15T12:00:01.000Z"
+    },
+    {
+      "id": "singleton:R|1|0805",
+      "signature": "R2005",
+      "at": "2026-09-15T12:00:00.000Z"
+    }
+  ]
+}

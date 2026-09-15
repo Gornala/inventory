@@ -1,0 +1,34 @@
+{
+  "assignments": [
+    {
+      "by": "user",
+      "decidedAt": "2026-09-15T12:00:01.000Z",
+      "key": "C|100n|0603",
+      "partId": "cl10b104kb8nnnc"
+    },
+    {
+      "by": "user",
+      "decidedAt": "2026-09-15T12:00:05.000Z",
+      "key": "C|10u|0805",
+      "partId": "cl21a106kaynnne"
+    },
+    {
+      "by": "user",
+      "decidedAt": "2026-09-15T12:00:08.000Z",
+      "key": "C|2.2u|0603",
+      "partId": "grm188r61e225ka12d"
+    },
+    {
+      "by": "user",
+      "decidedAt": "2026-09-15T12:00:03.000Z",
+      "key": "R|10k|0402",
+      "partId": "rc0402fr-0710kl"
+    },
+    {
+      "by": "user",
+      "decidedAt": "2026-09-15T12:00:06.000Z",
+      "key": "R|1k|0402",
+      "partId": "rc0402fr-0710kl"
+    }
+  ]
+}

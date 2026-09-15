@@ -1,0 +1,14 @@
+{
+  "choices": [
+    {
+      "key": "R|4|0805",
+      "buy": false,
+      "at": "2026-09-15T12:00:02.000Z"
+    },
+    {
+      "key": "TP|TestPoint|TestPoint_Pad_1.0x1.0mm",
+      "buy": true,
+      "at": "2026-09-15T12:00:03.000Z"
+    }
+  ]
+}

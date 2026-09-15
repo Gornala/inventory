@@ -1,0 +1,38 @@
+{
+  "parts": [
+    {
+      "addedAt": "2026-09-15T12:00:00.000Z",
+      "firstKey": "C|100n|0603",
+      "id": "cl10b104kb8nnnc",
+      "manufacturer": "Samsung",
+      "mpn": "CL10B104KB8NNNC",
+      "orderNumber": "C1591",
+      "supplier": "lcsc"
+    },
+    {
+      "addedAt": "2026-09-15T12:00:04.000Z",
+      "firstKey": "C|10u|0805",
+      "id": "cl21a106kaynnne",
+      "manufacturer": "",
+      "mpn": "CL21A106KAYNNNE"
+    },
+    {
+      "addedAt": "2026-09-15T12:00:07.000Z",
+      "firstKey": "C|2.2u|0603",
+      "id": "grm188r61e225ka12d",
+      "manufacturer": "",
+      "mpn": "GRM188R61E225KA12D",
+      "notes": "low ESR",
+      "package": "1608Metric"
+    },
+    {
+      "addedAt": "2026-09-15T12:00:02.000Z",
+      "datasheet": "https://x",
+      "firstKey": "R|10k|0402",
+      "id": "rc0402fr-0710kl",
+      "manufacturer": "Yageo",
+      "mpn": "RC0402FR-0710KL",
+      "package": "0603"
+    }
+  ]
+}

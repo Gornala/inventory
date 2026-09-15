@@ -12,6 +12,7 @@ function says which JavaScript expression it stands in for.
 from __future__ import annotations
 
 import math
+import re
 from decimal import ROUND_HALF_UP, Decimal
 from functools import cmp_to_key
 from typing import Any, Callable, Iterable
@@ -106,15 +107,24 @@ def js_round(x: float) -> int:
     return floor + 1 if x - floor >= 0.5 else floor
 
 
+# JavaScript's StringNumericLiteral. Python's float() is looser — it takes
+# "1_000", "inf" and "nan" — and would read numbers out of a KiCad file that
+# the TypeScript version ignored.
+_JS_DECIMAL = re.compile(r"[+-]?(?:Infinity|(?:[0-9]+\.?[0-9]*|\.[0-9]+)(?:[eE][+-]?[0-9]+)?)\Z")
+_JS_RADIX = re.compile(r"0(?:[xX][0-9a-fA-F]+|[oO][0-7]+|[bB][01]+)\Z")
+_JS_WHITESPACE = "\t\n\v\f\r                  　﻿"
+
+
 def num(text: str) -> float:
-    """``Number(text)`` for the decimal strings this codebase feeds it."""
-    stripped = text.strip()
+    """``Number(text)``."""
+    stripped = text.strip(_JS_WHITESPACE)
     if stripped == "":
         return 0.0
-    try:
-        return float(stripped)
-    except ValueError:
-        return math.nan
+    if _JS_DECIMAL.match(stripped):
+        return float(stripped.replace("Infinity", "inf"))
+    if _JS_RADIX.match(stripped):
+        return float(int(stripped, 0))
+    return math.nan
 
 
 # --- JSON --------------------------------------------------------------------

@@ -29,6 +29,42 @@ Development is **paused between rounds**. What the next boards turn up goes in
 closed at both ends: the tool stops at "what does this board need, and where do I buy it", and
 tracking what is on the shelf is somebody else's job (§8.3).
 
+## The Python version (branch `python-port`, in progress)
+
+A standard-library-only port, so kinv runs without Node or npm — on any Python 3.11+, including
+the one KiCad ships:
+
+```
+python -m kinv ui <project>
+"C:\Program Files\KiCad.0in\python.exe" -m kinv ui <project>
+```
+
+Run it from this directory. The page is the same page, byte for byte, extracted from
+`src/ui/page.ts`; only the server behind it is Python.
+
+**Ported and verified:** everything behind `kinv ui` — parsing, consolidation, footprint measurement
+and checks, the catalog and `.kinv` state, the report, the server and every endpoint, the schematic
+field write and read-back, spelling rewrites, the order export and the folder dialog.
+
+**Not ported yet:** the other commands — `check`, `bom`, `fp`, `watch`, `order` (with `--template` and
+`--import`), `resolve`, `fields`, `init` — and their terminal rendering. Until then, use the TypeScript
+version for those.
+
+**How it is verified:** not by reading the code side by side. `scripts/golden/*.ts` record the
+TypeScript version's answers as exact JSON text, and `pytests/` compare the Python output as text:
+~21,000 JavaScript number and collation cases, the reference board whole, 1,500 synthetic lines, 45
+footprints from the installed libraries, and the catalog files to the byte. The 99 browser tests in
+`tests/ui` run unchanged against the Python server (`npx vitest run -c vitest.python.config.ts`). On
+the live reference project through `kicad-cli`, the two reports are identical to the character.
+
+```
+python -m unittest discover -s pytests -t .        # nothing to install
+npx vitest run -c vitest.python.config.ts          # the browser suite, against Python
+```
+
+Keys, the catalog and `.kinv` files are byte-identical between the versions, so both can share one
+`~/.kinv` while the port finishes.
+
 ---
 
 ## 1. Why a tool at all

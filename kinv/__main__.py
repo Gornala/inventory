@@ -32,8 +32,10 @@ def _ui(args: argparse.Namespace) -> int:
         print(f"kinv ui: cannot listen on port {args.port}: {err.strerror or err}", file=sys.stderr)
         return 1
 
-    print(f"kinv ui → {url}")
-    print("re-reads the schematics whenever you save in KiCad · ctrl-c to stop")
+    # Flushed: through a pipe (an IDE's terminal, a launcher) stdout is
+    # block-buffered, and the address is the one line you need to see now.
+    print(f"kinv ui → {url}", flush=True)
+    print("re-reads the schematics whenever you save in KiCad · ctrl-c to stop", flush=True)
     if args.open:
         webbrowser.open(url)  # a convenience; failing to open one is not an error
     try:
@@ -45,6 +47,11 @@ def _ui(args: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # A Windows console or pipe in a legacy code page cannot print "→" or
+    # "·"; a replaced character is better than a crash on the first line.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(errors="replace")
     parser = argparse.ArgumentParser(prog="kinv", description="KiCad BOM → consolidated inventory → a basket per supplier")
     parser.add_argument("--version", action="version", version=__version__)
     commands = parser.add_subparsers(dest="command", required=True)

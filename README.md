@@ -36,7 +36,7 @@ the one KiCad ships:
 
 ```
 python -m kinv ui <project>
-"C:\Program Files\KiCad\10.0\bin\python.exe" -m kinv ui <project>
+& "C:\Program Files\KiCad\10.0\bin\python.exe" -m kinv ui <project>   # PowerShell: & runs a quoted path
 ```
 
 Run it from this directory. The page is the same page, byte for byte, extracted from

@@ -77,7 +77,27 @@ physical part, such as mounting holes and test pads, and any part you removed wi
 buy) button in the Parts tab — for example parts you already have in stock. The **buy this ↑** button
 puts a part back on the list.
 
-## Running kinv
+## kinv as a KiCad plugin
+
+kinv can sit in KiCad's toolbar, like Interactive HTML BOM: press the button in the PCB or schematic
+editor and kinv opens in your browser for the project you are working on. Press it again and the page
+that is already running opens; close the tab and kinv stops by itself after ten minutes.
+
+The plugin uses KiCad's new plugin interface (the IPC API), so it needs KiCad 10 and a one-time setup:
+
+1. **Build the package** in this folder: `python scripts/build_plugin.py`. It writes
+   `dist/kinv-kicad-plugin-<version>.zip`.
+2. **Enable the API:** in KiCad, open **Preferences → Plugins**, tick **Enable KiCad API**, and set
+   the Python interpreter to the one KiCad ships, `C:\Program Files\KiCad\10.0\bin\pythonw.exe`.
+3. **Install:** **Plugin and Content Manager → Install from File…** and pick the zip.
+4. **Restart KiCad.** On first use KiCad prepares a Python environment for the plugin and downloads
+   `kicad-python`, the library the plugin uses to ask KiCad which project is open. That needs an
+   internet connection once; kinv itself needs nothing.
+
+If the button reports a problem, the message says what went wrong. The server's own output is kept
+in `.kinv\servers\` in your user folder.
+
+## Running kinv from a terminal
 
 kinv is written in Python and uses only the standard library, so there is nothing to install. It runs
 on any Python 3.11 or newer — including the Python that ships with KiCad.

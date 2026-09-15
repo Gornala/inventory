@@ -1,0 +1,27 @@
+{
+  "$schema": "https://go.kicad.org/pcm/schemas/v2",
+  "name": "kinv",
+  "description": "Consolidate the BOM, pick the parts to buy and check the footprints, in the browser",
+  "description_full": "kinv reads the project's BOM and shows, in a local browser page: values that could be consolidated into fewer different parts, the parts list with the MPN, vendor and vendor part number you buy each part as (written back onto the symbols if you want), one order CSV per vendor, and a check of every footprint's pads against its name. Your decisions are kept in ~/.kinv and in the project's .kinv folder. Needs the KiCad API enabled (Preferences → Plugins).",
+  "identifier": "io.github.gornala.kinv",
+  "type": "plugin",
+  "author": {
+    "name": "Gornala",
+    "contact": {
+      "github": "https://github.com/Gornala"
+    }
+  },
+  "license": "MIT",
+  "resources": {
+    "Github": "https://github.com/Gornala/inventory"
+  },
+  "tags": ["bom", "inventory", "footprint"],
+  "versions": [
+    {
+      "version": "__VERSION__",
+      "status": "testing",
+      "kicad_version": "10.0",
+      "runtime": "ipc"
+    }
+  ]
+}

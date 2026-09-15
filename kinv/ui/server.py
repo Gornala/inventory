@@ -11,6 +11,7 @@ import json
 import math
 import os
 import threading
+import time
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -137,9 +138,16 @@ def start_ui_server(
 
         def _route(self) -> None:
             url = self.path or "/"
+            # An open tab polls every two seconds; `kinv ui --idle-exit` stops
+            # the server once that has been quiet for long enough.
+            server.last_request = time.monotonic()  # type: ignore[attr-defined]
             try:
                 if url == "/" or url.startswith("/?"):
                     return self._send(200, _HTML, "text/html; charset=utf-8")
+                if url.startswith("/api/hello"):
+                    # Which board this server is for — how the KiCad plugin
+                    # tells an open kinv it can reuse from a stale address.
+                    return self._json(200, {"kinv": BUILD, "project": os.path.abspath(project)})
                 if url.startswith("/api/footprint"):
                     return self._footprint(url)
                 if url.startswith("/api/exports"):
@@ -383,5 +391,6 @@ def start_ui_server(
 
     server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     server.daemon_threads = True
+    server.last_request = time.monotonic()  # type: ignore[attr-defined]
     threading.Thread(target=server.serve_forever, name="kinv-ui", daemon=True).start()
     return server, f"http://127.0.0.1:{server.server_address[1]}/"

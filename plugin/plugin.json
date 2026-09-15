@@ -1,0 +1,22 @@
+{
+  "$schema": "https://go.kicad.org/api/schemas/v1",
+  "identifier": "io.github.gornala.kinv",
+  "name": "kinv",
+  "description": "Consolidate the BOM, pick the parts to buy and check the footprints, in the browser",
+  "runtime": {
+    "type": "python",
+    "min_version": "3.11"
+  },
+  "actions": [
+    {
+      "identifier": "open",
+      "name": "kinv: parts and footprints",
+      "description": "Open kinv for this project in the browser",
+      "show-button": true,
+      "scopes": ["pcb", "schematic"],
+      "entrypoint": "kinv_action.py",
+      "icons-light": ["icon-light-24.png", "icon-light-48.png"],
+      "icons-dark": ["icon-dark-24.png", "icon-dark-48.png"]
+    }
+  ]
+}

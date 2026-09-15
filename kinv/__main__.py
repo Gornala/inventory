@@ -6,6 +6,7 @@ Only ``ui`` so far; the other commands follow in the next stage of the port.
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 import time
 import webbrowser
@@ -17,6 +18,9 @@ from kinv.js import num
 def _ui(args: argparse.Namespace) -> int:
     from kinv.ui.server import start_ui_server
 
+    if not os.path.exists(args.project):
+        print(f"kinv ui: no such project: {args.project}", file=sys.stderr)
+        return 1
     near = num(args.near)
     options = {
         "group_by": args.group_by,
@@ -32,17 +36,29 @@ def _ui(args: argparse.Namespace) -> int:
         print(f"kinv ui: cannot listen on port {args.port}: {err.strerror or err}", file=sys.stderr)
         return 1
 
+    from kinv.launch import clear_record, write_record
+
     # Flushed: through a pipe (an IDE's terminal, a launcher) stdout is
     # block-buffered, and the address is the one line you need to see now.
     print(f"kinv ui → {url}", flush=True)
     print("re-reads the schematics whenever you save in KiCad · ctrl-c to stop", flush=True)
+    try:
+        write_record(args.project, url)  # so the KiCad plugin finds this server instead of starting another
+    except OSError:
+        pass
     if args.open:
         webbrowser.open(url)  # a convenience; failing to open one is not an error
+    idle = args.idle_exit * 60
     try:
         while True:
-            time.sleep(3600)
+            time.sleep(5)
+            if idle > 0 and time.monotonic() - server.last_request > idle:
+                print(f"no tab for {args.idle_exit:g} min · stopping", flush=True)
+                break
     except KeyboardInterrupt:
-        server.shutdown()
+        pass
+    clear_record(args.project, url)
+    server.shutdown()
     return 0
 
 
@@ -64,6 +80,9 @@ def main(argv: list[str] | None = None) -> int:
     ui.add_argument("--near", default="2", help="flag values closer together than this percentage")
     ui.add_argument("--include-excluded", action="store_true", help="keep test points and mounting holes as parts")
     ui.add_argument("--no-open", dest="open", action="store_false", help="do not open a browser")
+    ui.add_argument(
+        "--idle-exit", type=float, default=0, metavar="MINUTES", help="stop once no tab has polled for this long (default: never)"
+    )
     ui.set_defaults(run=_ui)
 
     args = parser.parse_args(argv)

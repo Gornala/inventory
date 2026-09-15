@@ -1,0 +1,2 @@
+# Only the plugin needs this, to ask KiCad which project is open; kinv itself is standard library only.
+kicad-python>=0.5

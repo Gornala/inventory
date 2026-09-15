@@ -13,3 +13,7 @@ order.*.csv
 .env
 .env.*
 .scratch/
+
+# python
+__pycache__/
+*.pyc

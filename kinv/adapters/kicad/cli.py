@@ -74,7 +74,7 @@ def export_bom(project_path: str, group_by: str | None = None, exclude_dnp: bool
         command.append(schematic)
 
         creation = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
-        result = subprocess.run(command, capture_output=True, creationflags=creation)
+        result = subprocess.run(command, stdin=subprocess.DEVNULL, capture_output=True, creationflags=creation)
         if result.returncode != 0:
             detail = (result.stderr or result.stdout).decode("utf8", errors="replace").strip()
             raise RuntimeError(f"kicad-cli failed ({result.returncode}): {detail}")

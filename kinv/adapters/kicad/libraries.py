@@ -18,15 +18,31 @@ def _newest_first(names: list[str]) -> list[str]:
 
 
 def _kicad_roots() -> list[str]:
-    """KiCad install roots, newest first."""
+    """KiCad install roots: the one kinv was pointed at, then the usual places, newest first."""
     roots: list[str] = []
+    pointed = os.environ.get("KINV_KICAD_ROOT")
+    if pointed:
+        roots.append(pointed)
+    cli = os.environ.get("KINV_KICAD_CLI")
+    if cli:
+        # <root>/bin/kicad-cli.exe, /usr/bin/kicad-cli, KiCad.app/Contents/MacOS/kicad-cli: two up is
+        # the root. The KiCad plugin sets this from KiCad itself, so an install anywhere is found.
+        roots.append(os.path.dirname(os.path.dirname(os.path.abspath(cli))))
     base = "C:/Program Files/KiCad"
     if os.path.exists(base):
         roots.extend(os.path.join(base, version) for version in _newest_first(os.listdir(base)))
     for unix in ("/usr/share/kicad", "/usr/local/share/kicad"):
         if os.path.exists(unix):
             roots.append(os.path.dirname(os.path.dirname(unix)))
+    mac = "/Applications/KiCad/KiCad.app/Contents"
+    if os.path.exists(mac):
+        roots.append(mac)
     return roots
+
+
+def _install_dirs(root: str, kind: str) -> list[str]:
+    """Where an install keeps ``footprints``, ``symbols`` or ``3dmodels``: share/kicad, or SharedSupport on macOS."""
+    return [os.path.join(root, "share/kicad", kind), os.path.join(root, "SharedSupport", kind)]
 
 
 _VAR = re.compile(r"\$\{([^}]+)\}")
@@ -50,20 +66,20 @@ def resolve_vars(uri: str) -> str:
         if from_config:
             return from_config
 
-        suffix = (
-            "share/kicad/footprints"
+        kind = (
+            "footprints"
             if name.endswith("FOOTPRINT_DIR")
-            else "share/kicad/symbols"
+            else "symbols"
             if name.endswith("SYMBOL_DIR")
-            else "share/kicad/3dmodels"
+            else "3dmodels"
             if name.endswith("3DMODEL_DIR")
             else None
         )
-        if suffix:
+        if kind:
             for root in _kicad_roots():
-                candidate = os.path.join(root, suffix)
-                if os.path.exists(candidate):
-                    return candidate
+                for candidate in _install_dirs(root, kind):
+                    if os.path.exists(candidate):
+                        return candidate
         return match.group(0)
 
     return _VAR.sub(replace, uri)

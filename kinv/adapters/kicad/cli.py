@@ -23,7 +23,7 @@ def _bom_fields(schematic: str) -> str:
 
 
 def find_kicad_cli() -> str | None:
-    """The KINV_KICAD_CLI override, then the Windows install root (newest first), then PATH."""
+    """The KINV_KICAD_CLI override, then the Windows install root (newest first), the macOS app, then PATH."""
     override = os.environ.get("KINV_KICAD_CLI")
     if override:
         return override if os.path.exists(override) else None
@@ -34,6 +34,10 @@ def find_kicad_cli() -> str | None:
         versions.sort(key=lambda v: collation_key(v, numeric=True), reverse=True)
         if versions:
             return os.path.join(root, versions[0], "bin/kicad-cli.exe")
+
+    mac = "/Applications/KiCad/KiCad.app/Contents/MacOS/kicad-cli"
+    if os.path.exists(mac):
+        return mac
 
     return "kicad-cli.exe" if os.name == "nt" else "kicad-cli"
 

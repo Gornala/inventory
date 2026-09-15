@@ -16,6 +16,75 @@ for your vendor.
 kinv never changes your board on its own. Everything it finds is a suggestion, and every change is
 something you confirm.
 
+## Getting started
+
+There are two ways to start kinv. Both open the same page in your browser, and both re-read the
+schematic every time you save in KiCad, so you can keep KiCad and kinv open side by side.
+
+- **As a KiCad plugin (recommended):** a **kinv** button in the toolbar of the PCB and schematic
+  editors, like Interactive HTML BOM. One click opens kinv for the project you are working on.
+- **From a terminal:** one command, for KiCad 9, or if you prefer not to install a plugin.
+
+### Option 1 — the KiCad plugin
+
+The plugin uses KiCad's new plugin interface (the IPC API), so it needs **KiCad 10**. It has been
+tested on Windows. The setup is done once:
+
+1. **Get kinv:** download or clone this repository.
+2. **Build the plugin package:** open a terminal in the repository folder and run
+   `python scripts/build_plugin.py`. Any Python 3.11 or newer works, including KiCad's own (see
+   Option 2). It writes `dist/kinv-kicad-plugin-<version>.zip`.
+3. **Enable the API:** in KiCad, open **Preferences → Plugins** and tick **Enable KiCad API**. Check
+   the **Python interpreter** field below it: it must point at an existing Python. If it is empty or
+   points at an older KiCad you no longer have (settings carried over from KiCad 9 do that), set it
+   to the `pythonw.exe` in the `bin` folder of your KiCad 10 installation — by default
+   `C:\Program Files\KiCad\10.0\bin\pythonw.exe`.
+4. **Install:** open the **Plugin and Content Manager**, choose **Install from File…** and pick the
+   zip.
+5. **Restart KiCad.** The first time you press the button, KiCad prepares a small Python environment
+   for the plugin and downloads `kicad-python`, the library the plugin uses to ask KiCad which project
+   is open. That needs an internet connection once, and the first start takes a little longer.
+
+Using it: open your project and press the **kinv** button in the PCB or schematic editor. Pressing it
+again opens the page that is already running instead of starting a second one. Each project gets its
+own page, so you can have several boards open at once. When you close the tab, kinv stops by itself
+after ten minutes.
+
+If something goes wrong, a message box says what happened. kinv's own output is kept in the
+`.kinv\servers` folder in your user folder.
+
+### Option 2 — from a terminal
+
+kinv is written in Python and uses only the standard library, so there is nothing to install. It runs
+on any Python 3.11 or newer — including the Python that ships with KiCad.
+
+Download or clone this repository, open a terminal in its folder, and start kinv with your project:
+
+```powershell
+# with your own Python
+python -m kinv ui "C:\path\to\your\project.kicad_pro"
+
+# with the Python that ships with KiCad (PowerShell needs the & in front of a quoted path)
+& "C:\Program Files\KiCad\10.0\bin\python.exe" -m kinv ui "C:\path\to\your\project.kicad_pro"
+```
+
+Press **Ctrl+C** in the terminal to stop it.
+
+### Useful to know
+
+- **Requirements:** KiCad 10 for the plugin; KiCad 9 or 10 from the terminal. kinv reads the schematic
+  with `kicad-cli`, which comes with KiCad. From the terminal it also accepts a BOM exported as `.csv`.
+- **KiCad installed somewhere else?** The plugin asks KiCad where it is, so nothing needs setting. From
+  the terminal, kinv looks in the usual places; if your KiCad is elsewhere, set the environment
+  variable `KINV_KICAD_CLI` to the full path of `kicad-cli`, and kinv finds KiCad's libraries next to
+  it.
+- **Your decisions are stored in plain files.** The parts you assign (MPN, manufacturer, vendor) are
+  kept in `.kinv` in your user folder and shared by all your projects, so a part you chose once is
+  already known on the next board. Per-project decisions — settled suggestions and do-not-buy parts —
+  are kept in a `.kinv` folder next to the project, where they can be committed to git.
+- **Closing the schematic editor** is required before writing onto the symbols; kinv will not change
+  a file that KiCad has open.
+
 ## Step 1 — Consolidation
 
 The **Consolidation** tab collects suggestions for making your parts list shorter and more
@@ -76,55 +145,6 @@ The **Not bought** tab lists the parts that are left out of the order: board fea
 physical part, such as mounting holes and test pads, and any part you removed with the **⊘** (do not
 buy) button in the Parts tab — for example parts you already have in stock. The **buy this ↑** button
 puts a part back on the list.
-
-## kinv as a KiCad plugin
-
-kinv can sit in KiCad's toolbar, like Interactive HTML BOM: press the button in the PCB or schematic
-editor and kinv opens in your browser for the project you are working on. Press it again and the page
-that is already running opens; close the tab and kinv stops by itself after ten minutes.
-
-The plugin uses KiCad's new plugin interface (the IPC API), so it needs KiCad 10 and a one-time setup:
-
-1. **Build the package** in this folder: `python scripts/build_plugin.py`. It writes
-   `dist/kinv-kicad-plugin-<version>.zip`.
-2. **Enable the API:** in KiCad, open **Preferences → Plugins**, tick **Enable KiCad API**, and set
-   the Python interpreter to the one KiCad ships, `C:\Program Files\KiCad\10.0\bin\pythonw.exe`.
-3. **Install:** **Plugin and Content Manager → Install from File…** and pick the zip.
-4. **Restart KiCad.** On first use KiCad prepares a Python environment for the plugin and downloads
-   `kicad-python`, the library the plugin uses to ask KiCad which project is open. That needs an
-   internet connection once; kinv itself needs nothing.
-
-If the button reports a problem, the message says what went wrong. The server's own output is kept
-in `.kinv\servers\` in your user folder.
-
-## Running kinv from a terminal
-
-kinv is written in Python and uses only the standard library, so there is nothing to install. It runs
-on any Python 3.11 or newer — including the Python that ships with KiCad.
-
-Download or clone this repository, open a terminal in its folder, and start kinv with your project:
-
-```powershell
-# with your own Python
-python -m kinv ui "C:\path\to\your\project.kicad_pro"
-
-# with the Python that ships with KiCad (PowerShell needs the & in front of a quoted path)
-& "C:\Program Files\KiCad\10.0\bin\python.exe" -m kinv ui "C:\path\to\your\project.kicad_pro"
-```
-
-kinv opens in your browser. It re-reads the schematic every time you save in KiCad, so you can keep
-both open side by side. Press **Ctrl+C** in the terminal to stop it.
-
-Useful to know:
-
-- **Requirements:** KiCad 9 or 10. kinv uses `kicad-cli`, which comes with KiCad, to read the
-  schematic. It also accepts a BOM exported as `.csv`.
-- **Your decisions are stored in plain files.** The parts you assign (MPN, manufacturer, vendor) are
-  kept in `.kinv` in your user folder and shared by all your projects, so a part you chose once is
-  already known on the next board. Per-project decisions — settled suggestions and do-not-buy parts —
-  are kept in a `.kinv` folder next to the project, where they can be committed to git.
-- **Closing the schematic editor** is required before writing onto the symbols; kinv will not change
-  a file that KiCad has open.
 
 ## Not planned
 

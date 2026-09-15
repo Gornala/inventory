@@ -74,7 +74,9 @@ def main() -> int:
         try:
             cli = kicad.get_kicad_binary_path("kicad-cli")
             if cli and os.path.exists(cli):
-                env["KINV_KICAD_CLI"] = cli  # the kicad-cli of this KiCad, not whichever is found first
+                # This KiCad's kicad-cli, not whichever is found first — and so its
+                # footprint libraries too, wherever it is installed.
+                env["KINV_KICAD_CLI"] = cli
         except Exception:  # noqa: BLE001 — kinv looks for one itself
             pass
 

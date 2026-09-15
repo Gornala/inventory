@@ -1,0 +1,14 @@
+# Source is normalised to LF in the repo.
+* text=auto eol=lf
+
+# KiCad files are NEVER normalised. The step-2b write-back guarantees a
+# byte-identical no-op round trip, and git rewriting line endings underneath the
+# fixtures would silently invalidate exactly the test that makes writing to a
+# user's schematic safe.
+*.kicad_sch  -text
+*.kicad_mod  -text
+*.kicad_pcb  -text
+*.kicad_pro  -text
+*.kicad_sym  -text
+*.kicad_prl  -text
+tests/fixtures/** -text

@@ -1,0 +1,15 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# tool state
+.cache/
+*.bak
+# what `kinv order` writes beside the project it is pointed at
+order.*.csv
+
+# secrets
+.env
+.env.*
+.scratch/

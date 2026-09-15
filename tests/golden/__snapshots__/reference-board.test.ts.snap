@@ -1,0 +1,24 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`reference board: defect findings > summarises the board without surprises 1`] = `
+{
+  "byCode": {
+    "class-mismatch": 4,
+    "pre-resolved": 5,
+  },
+  "bySeverity": {
+    "info": 5,
+    "warning": 4,
+  },
+}
+`;
+
+exports[`reference board: the consolidation report > summarises the findings without surprises 1`] = `
+{
+  "duplicate-spelling": 4,
+  "mixed-footprint": 1,
+  "multi-package": 6,
+  "near-value": 1,
+  "singleton": 22,
+}
+`;

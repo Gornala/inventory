@@ -20,6 +20,6 @@
 
     "noEmit": true
   },
-  "include": ["src", "tests", "*.config.ts", "eslint.config.js"],
+  "include": ["src", "tests", "scripts", "*.config.ts", "eslint.config.js"],
   "exclude": ["dist", "node_modules"]
 }

@@ -23,9 +23,8 @@ const { parseFootprintFile } = await import("../../src/adapters/kicad/mod.js");
 const { measure } = await import("../../src/core/footprint/measure.js");
 const { parseFootprintName } = await import("../../src/core/footprint/name.js");
 const { checkFootprint, checkPinNumbers } = await import("../../src/core/footprint/check.js");
-const { readAssignments, readCatalog, writeAssignments, writeCatalog } = await import(
-  "../../src/adapters/store/inventory.js"
-);
+const { readAssignments, readCatalog, writeAssignments, writeCatalog } =
+  await import("../../src/adapters/store/inventory.js");
 const { writeSolved } = await import("../../src/adapters/store/solved.js");
 const { writeBuyChoices } = await import("../../src/adapters/store/buy.js");
 const { assignPart, setSupplier, partId } = await import("../../src/core/inventory/resolve.js");
@@ -37,10 +36,10 @@ const enc = (x: unknown): string => JSON.stringify(x);
  * time, the file-time signature, and the absolute project path — which names
  * this machine's user directory and has no business in a public repository.
  */
-const reportText = (r: Record<string, unknown>): string => {
-  const { generatedAt: _g, sourceSignature: _s, project: _p, ...rest } = r;
-  return enc(rest);
-};
+const without = (value: object, drop: readonly string[]): Record<string, unknown> =>
+  Object.fromEntries(Object.entries(value).filter(([k]) => !drop.includes(k)));
+const reportText = (r: object): string =>
+  enc(without(r, ["generatedAt", "sourceSignature", "project"]));
 
 // --- an empty inventory ---------------------------------------------------------
 
@@ -70,10 +69,19 @@ const assign = (key: string, entry: Record<string, string>): void => {
 };
 assign("C|100n|0603", { mpn: "CL10B104KB8NNNC", manufacturer: "Samsung" });
 assign("R|10k|0402", { mpn: " RC0402FR-0710KL ", manufacturer: "", package: "0603" }); // wrong size on purpose
-assign("C|10u|0805", { mpn: "CL21A106KAYNNNE", supplier: "digikey", orderNumber: "1276-2891-1-ND" });
+assign("C|10u|0805", {
+  mpn: "CL21A106KAYNNNE",
+  supplier: "digikey",
+  orderNumber: "1276-2891-1-ND",
+});
 assign("R|1k|0402", { mpn: "rc0402fr-0710kl", manufacturer: "Yageo", datasheet: "https://x" }); // same part id
 assign("C|2.2u|0603", { mpn: "GRM188R61E225KA12D", notes: "  low ESR  ", package: "1608Metric" });
-const supplied = setSupplier("C|100n|0603", { supplier: "lcsc", orderNumber: "C1591" }, catalog, assignments);
+const supplied = setSupplier(
+  "C|100n|0603",
+  { supplier: "lcsc", orderNumber: "C1591" },
+  catalog,
+  assignments,
+);
 catalog = supplied.catalog;
 steps.push(enc(supplied));
 const cleared = setSupplier("C|10u|0805", { supplier: "", orderNumber: " " }, catalog, assignments);
@@ -105,30 +113,54 @@ const footprints = readdirSync(fixtureDir)
     return enc({ f, file, measured, declared, findings: checkFootprint(declared, measured) });
   });
 // every footprint the reference board's report could reach, from the real libraries
-const detail = JSON.parse(emptyReport).footprints
-  .map((a: { reference: string }) => a.reference)
-  .map((reference: string) => {
+const audited = (JSON.parse(emptyReport) as { footprints: { reference: string }[] }).footprints;
+const detail: string[] = audited
+  .map((a) => a.reference)
+  .map((reference) => {
     const found = footprintDetail(empty + "/board.bom.csv", reference);
     if (found === undefined) return enc(null);
     // `path` is where the library sits on this machine — for a personal
     // library, inside the user's own documents. Everything else is compared.
-    const { path: _where, ...rest } = found;
-    return enc(rest);
+    return enc(without(found, ["path"]));
   });
 
 const pinChecks = [
-  [["1", "2", "3"], ["1", "2", "3"]],
-  [["1", "2", "3", "EP"], ["1", "2", "3"]],
+  [
+    ["1", "2", "3"],
+    ["1", "2", "3"],
+  ],
+  [
+    ["1", "2", "3", "EP"],
+    ["1", "2", "3"],
+  ],
   [[], ["1"]],
   [["1", "1", "2"], []],
   [Array.from({ length: 12 }, (_, i) => String(i + 1)), ["1"]],
 ].map(([symbols, pads]) => enc(checkPinNumbers(symbols as string[], pads as string[])));
 
 const packages = [
-  "0603", " 0603 ", "1608", "1608Metric", "R0603", "FB0402", "C1005", "SOIC-8", "soic-8", "?", "n/a",
-  "", "0201", "2012", "2013", "l3225metric", "QFN-56", "r 0402",
+  "0603",
+  " 0603 ",
+  "1608",
+  "1608Metric",
+  "R0603",
+  "FB0402",
+  "C1005",
+  "SOIC-8",
+  "soic-8",
+  "?",
+  "n/a",
+  "",
+  "0201",
+  "2012",
+  "2013",
+  "l3225metric",
+  "QFN-56",
+  "r 0402",
 ].map((p) => enc([p, normalisePackage(p)]));
-const ids = ["RC0402FR-0710KL", " rc0402fr/0710kl ", "--A--", "µPart", "", "ab__cd"].map((m) => enc([m, partId(m)]));
+const ids = ["RC0402FR-0710KL", " rc0402fr/0710kl ", "--A--", "µPart", "", "ab__cd"].map((m) =>
+  enc([m, partId(m)]),
+);
 
 writeFileSync(
   "pytests/golden/report.json",
@@ -146,4 +178,6 @@ writeFileSync(
   }),
   "utf8",
 );
-console.log(`report goldens written; ${footprints.length} fixture footprints, ${detail.length} library footprints`);
+console.log(
+  `report goldens written; ${footprints.length} fixture footprints, ${detail.length} library footprints`,
+);

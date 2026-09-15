@@ -20,7 +20,9 @@ type Options = { port?: number; chooseFolder?: (start: string) => Promise<Folder
 
 const python = process.env["KINV_PYTHON"] ?? "python";
 
-async function answering(choose: Options["chooseFolder"]): Promise<{ url: string; server: Server } | undefined> {
+async function answering(
+  choose: Options["chooseFolder"],
+): Promise<{ url: string; server: Server } | undefined> {
   if (!choose) return undefined;
   const server = createServer((req, res) => {
     const chunks: Buffer[] = [];
@@ -44,7 +46,12 @@ export async function startUiServer(
   options: Options = {},
 ): Promise<{ server: { close(cb?: () => void): void }; url: string }> {
   const answers = await answering(options.chooseFolder);
-  const args = ["-m", "kinv.ui.testserve", project, ...(answers ? ["--choose-url", answers.url] : [])];
+  const args = [
+    "-m",
+    "kinv.ui.testserve",
+    project,
+    ...(answers ? ["--choose-url", answers.url] : []),
+  ];
   const child = spawn(python, args, {
     cwd: resolve(import.meta.dirname, ".."),
     env: process.env,
@@ -55,7 +62,9 @@ export async function startUiServer(
   const url = await new Promise<string>((done, fail) => {
     const lines = createInterface({ input: child.stdout });
     lines.once("line", (line) => done(line.trim()));
-    child.once("exit", (code) => fail(new Error(`the Python server exited (${code}) before it listened`)));
+    child.once("exit", (code) =>
+      fail(new Error(`the Python server exited (${code}) before it listened`)),
+    );
   });
 
   return {

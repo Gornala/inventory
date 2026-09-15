@@ -2,3 +2,9 @@ dist/
 coverage/
 node_modules/
 tests/fixtures/**
+# Generated, and compared byte for byte: the page is extracted from src/ui/page.ts
+# and must be exactly what the TypeScript server sends; the goldens are
+# JavaScript's own output and the fixtures are files both versions read.
+kinv/ui/page.html
+pytests/golden/**
+pytests/fixtures/**

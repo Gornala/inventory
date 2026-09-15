@@ -1,6 +1,6 @@
 """kinv.js against JavaScript's own answers.
 
-The cases in ``golden/js.json`` were computed by Node (``scripts/golden/js.mjs``):
+The cases in ``golden/js.json`` were computed by Node (``scripts/golden/js.ts``):
 thousands of numbers and strings, seeded, with the ties and edges where Python
 and JavaScript genuinely disagree. Every one has to match, because the keys
 the catalog is filed under are built out of these functions.

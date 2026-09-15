@@ -30,3 +30,36 @@ jobs:
       - run: npm run format:check
       - run: npm test
       - run: npm run build
+
+  python:
+    # The standard-library Python version. 3.11 is the floor because it is what
+    # KiCad 10 ships in its own bin directory — "runs with nothing installed"
+    # has to be true on that interpreter, not just on a newer one.
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.11", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Golden files record the TypeScript version's answers; the Python tests
+      # compare against them and need nothing installed.
+      - run: python -m unittest discover -s pytests -t .
+
+      # The browser tests from tests/ui, unchanged, against the Python server.
+      - run: npm ci
+      - run: npx vitest run -c vitest.python.config.ts
+        env:
+          KINV_PYTHON: python

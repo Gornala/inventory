@@ -36,7 +36,7 @@ the one KiCad ships:
 
 ```
 python -m kinv ui <project>
-"C:\Program Files\KiCad.0in\python.exe" -m kinv ui <project>
+"C:\Program Files\KiCad\10.0\bin\python.exe" -m kinv ui <project>
 ```
 
 Run it from this directory. The page is the same page, byte for byte, extracted from

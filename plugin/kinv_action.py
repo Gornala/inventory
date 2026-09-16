@@ -39,25 +39,40 @@ def tell(message: str) -> None:
         pass
 
 
-def open_project(kicad) -> str:
+def open_project(kicad, note) -> str:
     """The ``.kicad_pro`` of the board or schematic this was pressed in."""
     from kipy.proto.common.types import DocumentType
 
-    for doctype in (DocumentType.DOCTYPE_PCB, DocumentType.DOCTYPE_SCHEMATIC, DocumentType.DOCTYPE_PROJECT):
+    from kinv.adapters.kicad.recent import project_for
+
+    names = []
+    for doctype in (DocumentType.DOCTYPE_PCB, DocumentType.DOCTYPE_SCHEMATIC):
         try:
             documents = kicad.get_open_documents(doctype)
-        except Exception:  # noqa: BLE001 — an older KiCad may not answer for every type
+        except Exception as err:  # noqa: BLE001 — an older KiCad may not answer for every type
+            note(f"  {DocumentType.Name(doctype)}: no answer ({err})")
             continue
         for document in documents:
-            project = kicad.get_project(document)
-            if project.path and project.name:
-                path = os.path.join(project.path, project.name + ".kicad_pro")
+            note(f"  {DocumentType.Name(doctype)}: {document.board_filename!r} in {document.project.path!r}")
+            if document.project.path and document.project.name:
+                path = os.path.join(document.project.path, document.project.name + ".kicad_pro")
                 if os.path.exists(path):
                     return path
+            if document.board_filename:
+                names.append(document.board_filename)
+    # The schematic editor names its file but not its folder (KiCad 10.0).
+    for name in names:
+        path = project_for(name)
+        if path:
+            note(f"  {name} belongs to {path}")
+            return path
     raise RuntimeError("KiCad has no saved project open. Save the project first, then press the button again.")
 
 
 def main() -> int:
+    from kinv.launch import note
+
+    note(f"button pressed (KIPRJMOD={os.environ.get('KIPRJMOD')!r})")
     try:
         from kipy import KiCad
         from kipy.errors import ConnectionError as KiCadUnreachable
@@ -69,7 +84,8 @@ def main() -> int:
             raise RuntimeError(
                 f"KiCad's API does not answer ({err}).\n\nTurn it on in Preferences → Plugins → Enable KiCad API."
             ) from None
-        project = open_project(kicad)
+        project = open_project(kicad, note)
+        note(f"  project {project}")
         env = {}
         try:
             cli = kicad.get_kicad_binary_path("kicad-cli")
@@ -83,9 +99,11 @@ def main() -> int:
         from kinv.launch import open_ui
 
         open_ui(project, env=env)
+        note("  done")
         return 0
     except Exception as err:  # noqa: BLE001
         detail = str(err) if isinstance(err, RuntimeError) else traceback.format_exc()
+        note(f"  failed: {detail}")
         tell(f"kinv could not open.\n\n{detail}")
         return 1
 

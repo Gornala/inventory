@@ -109,25 +109,23 @@ def _config_vars() -> dict[str, str]:
     return merged
 
 
-def kicad_config_dirs() -> list[str]:
-    """KiCad's per-user config directories, newest version first."""
+def kicad_config_versions() -> list[str]:
+    """KiCad's per-user config directory for each version, newest first."""
     home = str(Path.home())
     if sys.platform == "win32":
-        roots = [os.path.join(os.environ.get("APPDATA") or os.path.join(home, "AppData/Roaming"), "kicad")]
+        root = os.path.join(os.environ.get("APPDATA") or os.path.join(home, "AppData/Roaming"), "kicad")
     elif sys.platform == "darwin":
-        roots = [os.path.join(home, "Library/Preferences/kicad")]
+        root = os.path.join(home, "Library/Preferences/kicad")
     else:
-        roots = [os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.join(home, ".config"), "kicad")]
+        root = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.join(home, ".config"), "kicad")
+    if not os.path.isdir(root):
+        return []
+    return [os.path.join(root, version) for version in _newest_first(os.listdir(root))]
 
-    dirs: list[str] = []
-    for root in roots:
-        if not os.path.exists(root):
-            continue
-        for version in _newest_first(os.listdir(root)):
-            directory = os.path.join(root, version)
-            if os.path.exists(os.path.join(directory, "fp-lib-table")):
-                dirs.append(directory)
-    return dirs
+
+def kicad_config_dirs() -> list[str]:
+    """KiCad's per-user config directories that hold a footprint table, newest version first."""
+    return [d for d in kicad_config_versions() if os.path.exists(os.path.join(d, "fp-lib-table"))]
 
 
 def parse_lib_table(text: str) -> list[dict]:

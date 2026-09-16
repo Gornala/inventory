@@ -44,6 +44,27 @@ def log_path(project: str) -> str:
     return _record_base(project) + ".log"
 
 
+def plugin_log_path() -> str:
+    return os.path.join(inventory_home(), "servers", "plugin.log")
+
+
+def note(message: str, keep: int = 300) -> None:
+    """One line in the plugin's log: what each press found and did, since a plugin has no terminal to show it."""
+    path = plugin_log_path()
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        try:
+            with open(path, encoding="utf8") as file:
+                lines = file.read().splitlines()[-(keep - 1):]
+        except OSError:
+            lines = []
+        lines.append(time.strftime("%Y-%m-%d %H:%M:%S ") + message)
+        with open(path, "w", encoding="utf8") as file:
+            file.write("\n".join(lines) + "\n")
+    except OSError:
+        pass  # a log that cannot be written must not stop the page from opening
+
+
 def write_record(project: str, url: str) -> None:
     path = record_path(project)
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -180,12 +201,13 @@ def show(url: str, wait: float = 5.0) -> None:
             ctypes.windll.user32.AllowSetForegroundWindow(-1)  # ASFW_ANY: the browser may take the front itself
         except (OSError, AttributeError):
             pass
-    webbrowser.open(url)
+    opened = webbrowser.open(url)
+    note(f"  browser asked to open {url}: {opened}")
     if os.name == "nt":
         try:
-            _windows_to_front("kinv", wait)
-        except (OSError, AttributeError, ValueError):
-            pass  # the page is open either way; only its window stayed where it was
+            note(f"  browser window brought to the front: {_windows_to_front('kinv', wait)}")
+        except (OSError, AttributeError, ValueError) as err:
+            note(f"  browser window left where it was: {err}")  # the page is open either way
 
 
 def open_ui(
@@ -199,6 +221,7 @@ def open_ui(
     project = os.path.abspath(project)
     url = running_url(project)
     if url:
+        note(f"  reusing the server at {url}")
         if browser:
             show(url)
         return url
@@ -223,6 +246,7 @@ def open_ui(
         url = running_url(project)
         if url:
             process.returncode = 0  # left running on purpose: not ours to wait for
+            note(f"  started a server at {url}")
             if browser:
                 # Here rather than in the server: this process was started by
                 # the click in KiCad, so Windows lets it pass the front on.

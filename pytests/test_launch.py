@@ -69,6 +69,14 @@ class FindingARunningServer(WithHome):
         self.assertFalse(os.path.exists(launch.record_path(PROJECT)))
 
 
+class FindingTheBrowserWindow(unittest.TestCase):
+    def test_the_page_title_in_any_browser_s_window_title(self):
+        for title in ("kinv", "kinv - Opera", "kinv — Mozilla Firefox", "kinv – Opera", "kinv - Google Chrome"):
+            self.assertTrue(launch.shows_page(title, "kinv"), title)
+        for title in ("kinventory - Notepad", "MW_board — PCB Editor", "notes about kinv - Opera", ""):
+            self.assertFalse(launch.shows_page(title, "kinv"), title)
+
+
 class ChoosingAPort(unittest.TestCase):
     def test_skips_a_port_in_use(self):
         with socket.socket() as taken:

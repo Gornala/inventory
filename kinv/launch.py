@@ -104,6 +104,90 @@ def _spawn(command: list[str], log, env: dict) -> subprocess.Popen:
         return subprocess.Popen(command, creationflags=flags, **options)
 
 
+def shows_page(window_title: str, title: str) -> bool:
+    """Whether a browser window's title is the page's: "kinv - Opera", "kinv — Mozilla Firefox"…"""
+    if not window_title.startswith(title):
+        return False
+    rest = window_title[len(title):]
+    return rest == "" or rest[:3] in (" - ", " — ", " – ")
+
+
+def _windows_to_front(title: str, wait: float) -> bool:
+    """Brings the browser window showing ``title`` to the front, once the page has loaded into it.
+
+    Windows lets only the foreground process hand the foreground on, and the
+    browser a URL is passed to is not it: an already open browser gets the new
+    tab behind KiCad, and pressing the button seems to do nothing. Attaching to
+    the foreground window's input for a moment is the documented way through.
+    """
+    import ctypes
+    from ctypes import wintypes
+
+    user32 = ctypes.windll.user32
+    kernel32 = ctypes.windll.kernel32
+    user32.GetForegroundWindow.restype = wintypes.HWND
+    user32.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.c_void_p]
+    for name in ("IsWindowVisible", "IsIconic", "SetForegroundWindow", "BringWindowToTop"):
+        getattr(user32, name).argtypes = [wintypes.HWND]
+    user32.ShowWindow.argtypes = [wintypes.HWND, ctypes.c_int]
+    user32.GetWindowTextW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
+
+    def matching() -> list:
+        found = []
+
+        @ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+        def visit(hwnd, _):
+            if user32.IsWindowVisible(hwnd):
+                buffer = ctypes.create_unicode_buffer(512)
+                user32.GetWindowTextW(hwnd, buffer, 512)
+                if shows_page(buffer.value, title):
+                    found.append(hwnd)
+            return True
+
+        user32.EnumWindows(visit, 0)
+        return found
+
+    deadline = time.monotonic() + wait
+    while True:
+        windows = matching()
+        if windows or time.monotonic() >= deadline:
+            break
+        time.sleep(0.1)
+    if not windows:
+        return False
+
+    hwnd = windows[0]  # topmost in z-order: the one the new tab went to
+    if user32.IsIconic(hwnd):
+        user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+    user32.IsGUIThread(True)  # AttachThreadInput needs this thread to have an input queue
+    here = kernel32.GetCurrentThreadId()
+    there = user32.GetWindowThreadProcessId(user32.GetForegroundWindow(), None)
+    attached = there and there != here and user32.AttachThreadInput(here, there, True)
+    try:
+        user32.BringWindowToTop(hwnd)
+        return bool(user32.SetForegroundWindow(hwnd))
+    finally:
+        if attached:
+            user32.AttachThreadInput(here, there, False)
+
+
+def show(url: str, wait: float = 5.0) -> None:
+    """Opens ``url`` in the browser and, on Windows, brings that browser to the front."""
+    if os.name == "nt":
+        try:
+            import ctypes
+
+            ctypes.windll.user32.AllowSetForegroundWindow(-1)  # ASFW_ANY: the browser may take the front itself
+        except (OSError, AttributeError):
+            pass
+    webbrowser.open(url)
+    if os.name == "nt":
+        try:
+            _windows_to_front("kinv", wait)
+        except (OSError, AttributeError, ValueError):
+            pass  # the page is open either way; only its window stayed where it was
+
+
 def open_ui(
     project: str, python: str | None = None, env: dict | None = None, wait: float = 20.0, browser: bool = True
 ) -> str:
@@ -116,17 +200,18 @@ def open_ui(
     url = running_url(project)
     if url:
         if browser:
-            webbrowser.open(url)
+            show(url)
         return url
 
     package_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     child_env = {**os.environ, **(env or {})}
     child_env["PYTHONPATH"] = os.pathsep.join(p for p in (package_root, child_env.get("PYTHONPATH")) if p)
     child_env["PYTHONUNBUFFERED"] = "1"
+    child_env["PYTHONIOENCODING"] = "utf-8"  # the log is a file, not a console in a legacy code page
     command = [
         python or sys.executable, "-m", "kinv", "ui", project,
-        "--port", str(free_port()), "--idle-exit", str(IDLE_MINUTES),
-    ] + ([] if browser else ["--no-open"])  # fmt: skip
+        "--port", str(free_port()), "--idle-exit", str(IDLE_MINUTES), "--no-open",
+    ]  # fmt: skip
 
     log_file = log_path(project)
     os.makedirs(os.path.dirname(log_file), exist_ok=True)
@@ -138,7 +223,11 @@ def open_ui(
         url = running_url(project)
         if url:
             process.returncode = 0  # left running on purpose: not ours to wait for
-            return url  # the server opens the browser itself, as `kinv ui` does
+            if browser:
+                # Here rather than in the server: this process was started by
+                # the click in KiCad, so Windows lets it pass the front on.
+                show(url)
+            return url
         if process.poll() is not None:
             break
         time.sleep(0.2)

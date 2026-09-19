@@ -46,3 +46,41 @@ def project_for(file_name: str, env: Mapping[str, str] | None = None, config_dir
         if os.path.isfile(candidate):
             return os.path.normpath(candidate)
     return None
+
+
+def project_of(
+    documents: list[tuple[str, str, str]],
+    env: Mapping[str, str] | None = None,
+    config_dirs: list[str] | None = None,
+) -> str | None:
+    """The ``.kicad_pro`` behind the documents KiCad has open, or None.
+
+    Each document is ``(file_name, project_name, project_folder)`` as KiCad's
+    API hands it over. The PCB editor fills the folder in; the schematic editor
+    (10.0) gives only ``MW_board.kicad_sch`` and leaves the rest empty, so that
+    one is looked up the long way round. A press carries the folder of the
+    window it came from in ``KIPRJMOD``: with two projects open, that is what
+    decides which of them the button belongs to.
+    """
+    env = os.environ if env is None else env
+    found = []
+    for file_name, name, folder in documents:
+        path = None
+        if folder and name:
+            candidate = os.path.join(folder, name + ".kicad_pro")
+            if os.path.isfile(candidate):
+                path = os.path.normpath(candidate)
+        if path is None and file_name:
+            path = project_for(file_name, env=env, config_dirs=config_dirs)
+        if path and path not in found:
+            found.append(path)
+    pressed_in = env.get("KIPRJMOD")
+    if pressed_in:
+        for path in found:
+            if _same_folder(os.path.dirname(path), pressed_in):
+                return path
+    return found[0] if found else None
+
+
+def _same_folder(a: str, b: str) -> bool:
+    return os.path.normcase(os.path.abspath(a)) == os.path.normcase(os.path.abspath(b))

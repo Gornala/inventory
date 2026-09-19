@@ -39,41 +39,47 @@ def tell(message: str) -> None:
         pass
 
 
-def open_project(kicad, note) -> str:
-    """The ``.kicad_pro`` of the board or schematic this was pressed in."""
+def open_documents(kicad, note) -> list[tuple[str, str, str]]:
+    """What KiCad has open, as ``(file name, project name, project folder)`` per document.
+
+    Both editors are asked, whichever the button was pressed in: the PCB editor
+    answers with the project's folder, the schematic editor (10.0) with the
+    file name alone, and either one on its own has to be enough.
+    """
     from kipy.proto.common.types import DocumentType
 
-    from kinv.adapters.kicad.recent import project_for
-
-    names = []
+    documents = []
     for doctype in (DocumentType.DOCTYPE_PCB, DocumentType.DOCTYPE_SCHEMATIC):
         try:
-            documents = kicad.get_open_documents(doctype)
+            open_ones = kicad.get_open_documents(doctype)
         except Exception as err:  # noqa: BLE001 — an older KiCad may not answer for every type
             note(f"  {DocumentType.Name(doctype)}: no answer ({err})")
             continue
-        for document in documents:
-            note(f"  {DocumentType.Name(doctype)}: {document.board_filename!r} in {document.project.path!r}")
-            if document.project.path and document.project.name:
-                path = os.path.join(document.project.path, document.project.name + ".kicad_pro")
-                if os.path.exists(path):
-                    return path
-            if document.board_filename:
-                names.append(document.board_filename)
-    # The schematic editor names its file but not its folder (KiCad 10.0).
-    for name in names:
-        path = project_for(name)
-        if path:
-            note(f"  {name} belongs to {path}")
-            return path
-    raise RuntimeError("KiCad has no saved project open. Save the project first, then press the button again.")
+        for document in open_ones:
+            note(
+                f"  {DocumentType.Name(doctype)}: {document.board_filename!r}"
+                f" in {document.project.path!r} ({document.project.name!r})"
+            )
+            documents.append((document.board_filename, document.project.name, document.project.path))
+    return documents
+
+
+def open_project(kicad, note) -> str:
+    """The ``.kicad_pro`` of the board or schematic this was pressed in."""
+    from kinv.adapters.kicad.recent import project_of
+
+    project = project_of(open_documents(kicad, note))
+    if not project:
+        raise RuntimeError("KiCad has no saved project open. Save the project first, then press the button again.")
+    return project
 
 
 def main() -> int:
-    from kinv.launch import note
-
-    note(f"button pressed (KIPRJMOD={os.environ.get('KIPRJMOD')!r})")
+    note = print  # until the package is found: a failure to import it must still reach a message box
     try:
+        from kinv.launch import note
+
+        note(f"button pressed in {os.getcwd()!r} (KIPRJMOD={os.environ.get('KIPRJMOD')!r})")
         from kipy import KiCad
         from kipy.errors import ConnectionError as KiCadUnreachable
 
